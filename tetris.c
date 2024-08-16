@@ -20,6 +20,23 @@
 #define LARGE_FONT 20
 #define SMALL_FONT 12
 
+#define BACKGROUND_COLOR                                                       \
+  (Color) { 23, 37, 84, 255 }
+#define MY_BLUE                                                                \
+  (Color) { 37, 99, 235, 255 }
+#define MY_LIGHT_BLUE                                                          \
+  (Color) { 96, 165, 250, 255 }
+#define MY_ORANGE                                                              \
+  (Color) { 245, 158, 11, 255 }
+#define MY_RED                                                                 \
+  (Color) { 220, 38, 38, 255 }
+#define MY_GREEN                                                               \
+  (Color) { 5, 150, 105, 255 }
+#define MY_PURPLE                                                              \
+  (Color) { 109, 40, 217, 255 }
+#define MY_YELLOW                                                              \
+  (Color) { 245, 158, 11, 255 }
+
 typedef enum SquareStatus { EMPTY, FILLED } SquareStatus;
 
 typedef struct Square {
@@ -67,49 +84,49 @@ void initPiece(PieceType type) {
     piece.grid[0][1] = FILLED;
     piece.grid[1][1] = FILLED;
     piece.grid[2][1] = FILLED;
-    piece.color = BLUE;
+    piece.color = MY_BLUE;
     break;
   case L:
     piece.grid[0][1] = FILLED;
     piece.grid[1][1] = FILLED;
     piece.grid[2][1] = FILLED;
     piece.grid[2][0] = FILLED;
-    piece.color = ORANGE;
+    piece.color = MY_ORANGE;
     break;
   case O:
     piece.grid[1][0] = FILLED;
     piece.grid[2][0] = FILLED;
     piece.grid[1][1] = FILLED;
     piece.grid[2][1] = FILLED;
-    piece.color = YELLOW;
+    piece.color = MY_YELLOW;
     break;
   case T:
     piece.grid[1][0] = FILLED;
     piece.grid[0][1] = FILLED;
     piece.grid[2][1] = FILLED;
     piece.grid[1][1] = FILLED;
-    piece.color = PURPLE;
+    piece.color = MY_PURPLE;
     break;
   case Z:
     piece.grid[0][0] = FILLED;
     piece.grid[1][0] = FILLED;
     piece.grid[1][1] = FILLED;
     piece.grid[2][1] = FILLED;
-    piece.color = RED;
+    piece.color = MY_RED;
     break;
   case S:
     piece.grid[2][0] = FILLED;
     piece.grid[1][0] = FILLED;
     piece.grid[1][1] = FILLED;
     piece.grid[0][1] = FILLED;
-    piece.color = GREEN;
+    piece.color = MY_GREEN;
     break;
   case I:
     piece.grid[0][1] = FILLED;
     piece.grid[1][1] = FILLED;
     piece.grid[2][1] = FILLED;
     piece.grid[3][1] = FILLED;
-    piece.color = SKYBLUE;
+    piece.color = MY_LIGHT_BLUE;
     piece.y = -1;
     break;
   }
@@ -129,7 +146,7 @@ void initGame(void) {
   for (int i = 0; i < X_SIZE; ++i) {
     for (int j = 0; j < Y_SIZE; ++j) {
       squares[i][j].status = EMPTY;
-      squares[i][j].color = BLACK;
+      squares[i][j].color = BACKGROUND_COLOR;
     }
   }
 
@@ -222,6 +239,7 @@ void clearLines(void) {
   }
   if (linesCleared > 10) {
     linesCleared = linesCleared - 10;
+    level += 1;
     gravitySpeed -= 5;
   }
   switch (numLinesCleared) {
@@ -267,7 +285,9 @@ bool isGameOver(void) {
 bool canGoRight(void) {
   for (int i = 0; i < TETRI_SIZE; ++i) {
     for (int j = 0; j < TETRI_SIZE; ++j) {
-      if (piece.grid[i][j] == FILLED && piece.x + i == X_SIZE - 1) {
+      if (piece.grid[i][j] == FILLED &&
+          (piece.x + i == X_SIZE - 1 ||
+           squares[piece.x + i + 1][piece.y + j].status == FILLED)) {
         return false;
       }
     }
@@ -278,11 +298,34 @@ bool canGoRight(void) {
 bool canGoLeft(void) {
   for (int i = 0; i < TETRI_SIZE; ++i) {
     for (int j = 0; j < TETRI_SIZE; ++j) {
-      if (piece.grid[i][j] == FILLED && piece.x + i == 0) {
+      if (piece.grid[i][j] == FILLED &&
+          (piece.x + i == 0 ||
+           squares[piece.x + i - 1][piece.y + j].status == FILLED)) {
         return false;
       }
     }
   }
+  return true;
+}
+
+bool canRotate(void) {
+  rotate();
+  for (int i = 0; i < TETRI_SIZE; ++i) {
+    for (int j = 0; j < TETRI_SIZE; ++j) {
+      if (piece.grid[i][j] == FILLED &&
+          ((piece.x + i < 0) || piece.x + i >= X_SIZE || piece.y + j < 0 ||
+           piece.y + j >= Y_SIZE ||
+           squares[piece.x + i][piece.y + j].status == FILLED)) {
+        rotate();
+        rotate();
+        rotate(); // rotate back to previous point LOL
+        return false;
+      }
+    }
+  }
+  rotate();
+  rotate();
+  rotate();
   return true;
 }
 
@@ -300,7 +343,7 @@ void updateGameState(void) {
       movementCounter = 0;
     } else if (IsKeyDown(KEY_DOWN)) {
       gravityCounter += gravitySpeed / 2;
-    } else if (IsKeyPressed(KEY_UP)) {
+    } else if (IsKeyPressed(KEY_UP) && canRotate()) {
       rotate();
     } else if (IsKeyPressed(KEY_SPACE)) {
       while (!shouldStop()) {
@@ -383,7 +426,7 @@ void drawGame(void) {
 
 void frame(void) {
   BeginDrawing();
-  ClearBackground(BLACK);
+  ClearBackground(BACKGROUND_COLOR);
   drawGame();
   DrawFPS(SCREEN_WIDTH - 80, 10);
   char buffer[40];
