@@ -18,7 +18,13 @@
 #define TYPE_COUNT 6
 
 typedef enum SquareStatus { EMPTY, FILLED } SquareStatus;
-static SquareStatus statuses[X_SIZE][Y_SIZE];
+
+typedef struct Square {
+  SquareStatus status;
+  Color color;
+} Square;
+
+static Square squares[X_SIZE][Y_SIZE];
 
 typedef enum TetriType { I, T, O, S, Z, L, J } TetriType;
 
@@ -27,6 +33,7 @@ typedef struct Tetri {
   int y;
   TetriType type;
   SquareStatus grid[TETRI_SIZE][TETRI_SIZE];
+  Color color;
 } Tetri;
 
 static Tetri tetriPos;
@@ -50,42 +57,49 @@ void initTetri(TetriType type) {
     tetriPos.grid[1][0] = FILLED;
     tetriPos.grid[2][0] = FILLED;
     tetriPos.grid[2][1] = FILLED;
+    tetriPos.color = BLUE;
     break;
   case L:
     tetriPos.grid[0][0] = FILLED;
     tetriPos.grid[1][0] = FILLED;
     tetriPos.grid[2][0] = FILLED;
     tetriPos.grid[0][1] = FILLED;
+    tetriPos.color = ORANGE;
     break;
   case O:
     tetriPos.grid[0][0] = FILLED;
     tetriPos.grid[1][0] = FILLED;
     tetriPos.grid[0][1] = FILLED;
     tetriPos.grid[1][1] = FILLED;
+    tetriPos.color = YELLOW;
     break;
   case T:
     tetriPos.grid[0][0] = FILLED;
     tetriPos.grid[1][0] = FILLED;
     tetriPos.grid[2][0] = FILLED;
     tetriPos.grid[1][1] = FILLED;
+    tetriPos.color = PURPLE;
     break;
   case Z:
     tetriPos.grid[0][0] = FILLED;
     tetriPos.grid[1][0] = FILLED;
     tetriPos.grid[1][1] = FILLED;
     tetriPos.grid[2][1] = FILLED;
+    tetriPos.color = RED;
     break;
   case S:
     tetriPos.grid[2][0] = FILLED;
     tetriPos.grid[1][0] = FILLED;
     tetriPos.grid[1][1] = FILLED;
     tetriPos.grid[0][1] = FILLED;
+    tetriPos.color = GREEN;
     break;
   case I:
     tetriPos.grid[0][0] = FILLED;
     tetriPos.grid[1][0] = FILLED;
     tetriPos.grid[2][0] = FILLED;
     tetriPos.grid[3][0] = FILLED;
+    tetriPos.color = SKYBLUE;
     break;
   }
 }
@@ -93,7 +107,8 @@ void initTetri(TetriType type) {
 void initGame(void) {
   for (int i = 0; i < X_SIZE; ++i) {
     for (int j = 0; j < Y_SIZE; ++j) {
-      statuses[i][j] = EMPTY;
+      squares[i][j].status = EMPTY;
+      squares[i][j].color = BLACK;
     }
   }
 }
@@ -129,7 +144,7 @@ bool shouldStop(void) {
   for (int i = 0; i < TETRI_SIZE; ++i) {
     for (int j = 0; j < TETRI_SIZE; ++j) {
       if ((tetriPos.grid[i][j] == FILLED &&
-           statuses[tetriPos.x + i][tetriPos.y + j] == FILLED) ||
+           squares[tetriPos.x + i][tetriPos.y + j].status == FILLED) ||
           (tetriPos.grid[i][j] == FILLED && (tetriPos.y + j) == Y_SIZE)) {
         return true;
       }
@@ -142,7 +157,7 @@ void clearLines(void) {
   for (int j = 0; j < Y_SIZE; ++j) {
     bool clear = true;
     for (int i = 0; i < X_SIZE; ++i) {
-      if (statuses[i][j] == EMPTY) {
+      if (squares[i][j].status == EMPTY) {
         clear = false;
       }
     }
@@ -150,7 +165,7 @@ void clearLines(void) {
       score += 1;
       for (int k = j - 1; k > 0; --k) {
         for (int i = 0; i < X_SIZE; ++i) {
-          statuses[i][k + 1] = statuses[i][k];
+          squares[i][k + 1].status = squares[i][k].status;
         }
       }
     }
@@ -161,7 +176,8 @@ void fillStatuses(void) {
   for (int i = 0; i < TETRI_SIZE; ++i) {
     for (int j = 0; j < TETRI_SIZE; ++j) {
       if (tetriPos.grid[i][j] == FILLED) {
-        statuses[tetriPos.x + i][tetriPos.y + j - 1] = FILLED;
+        squares[tetriPos.x + i][tetriPos.y + j - 1].status = FILLED;
+        squares[tetriPos.x + i][tetriPos.y + j - 1].color = tetriPos.color;
       }
     }
   }
@@ -179,17 +195,17 @@ void updateGameState(void) {
     rotate();
   }
 
+  gravityCounter += 1;
+  if (gravityCounter > gravitySpeed) {
+    gravityCounter = 0;
+    tetriPos.y += 1;
+  }
+
   if (shouldStop()) {
     fillStatuses();
     int val = GetRandomValue(0, TYPE_COUNT);
     initTetri(val);
     clearLines();
-  }
-
-  gravityCounter += 1;
-  if (gravityCounter > gravitySpeed) {
-    gravityCounter = 0;
-    tetriPos.y += 1;
   }
 }
 
@@ -198,7 +214,7 @@ void updateGameState(void) {
 void printStatus(void) {
   for (int i = 0; i < X_SIZE; ++i) {
     for (int j = 0; j < Y_SIZE; ++j) {
-      if (statuses[i][j] == FILLED) {
+      if (squares[i][j].status == FILLED) {
         printf("X");
       } else {
         printf("_");
@@ -208,7 +224,6 @@ void printStatus(void) {
   }
 }
 void drawSquare(int x, int y, Color color) {
-  // X needs to be between 10 and 0, Y needs to be between 0 and 22
   DrawRectangle(x * SQUARE_WIDTH, y * SQUARE_WIDTH, SQUARE_WIDTH, SQUARE_WIDTH,
                 color);
 }
@@ -219,7 +234,7 @@ void drawTetri(void) {
       if (tetriPos.grid[i][j] == FILLED) {
         switch (tetriPos.type) {
         default:
-          drawSquare(tetriPos.x + i, tetriPos.y + j, BLUE);
+          drawSquare(tetriPos.x + i, tetriPos.y + j, tetriPos.color);
           break;
         }
       }
@@ -231,8 +246,8 @@ void drawGame(void) {
   drawTetri();
   for (int i = 0; i < X_SIZE; ++i) {
     for (int j = 0; j < Y_SIZE; ++j) {
-      if (statuses[i][j] == FILLED) {
-        drawSquare(i, j, WHITE);
+      if (squares[i][j].status == FILLED) {
+        drawSquare(i, j, squares[i][j].color);
       }
     }
   }
