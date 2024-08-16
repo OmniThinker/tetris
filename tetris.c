@@ -16,6 +16,8 @@
 #define SCREEN_HEIGHT Y_SIZE *SQUARE_WIDTH
 #define TETRI_SIZE 4
 #define TYPE_COUNT 6
+#define LARGE_FONT 20
+#define SMALL_FONT 12
 
 typedef enum SquareStatus { EMPTY, FILLED } SquareStatus;
 
@@ -37,11 +39,12 @@ typedef struct Tetri {
 } Tetri;
 
 static Tetri tetriPos;
-static int gravitySpeed = 30;
-static int gravityCounter = 0;
-static int score = 0;
+static int gravitySpeed;
+static int gravityCounter;
+static int score;
 
-static bool paused = false;
+static bool paused;
+static bool gameOver;
 
 void initTetri(TetriType type) {
   tetriPos.x = 0;
@@ -107,12 +110,20 @@ void initTetri(TetriType type) {
 }
 
 void initGame(void) {
+  gravitySpeed = 30;
+  gravityCounter = 0;
+  score = 0;
+  paused = false;
+  gameOver = false;
   for (int i = 0; i < X_SIZE; ++i) {
     for (int j = 0; j < Y_SIZE; ++j) {
       squares[i][j].status = EMPTY;
       squares[i][j].color = BLACK;
     }
   }
+
+  int val = GetRandomValue(0, TYPE_COUNT);
+  initTetri(val);
 }
 
 void rotate(void) {
@@ -185,8 +196,19 @@ void fillStatuses(void) {
   }
 }
 
+bool isGameOver(void) {
+  for (int i = 0; i < TETRI_SIZE; ++i) {
+    for (int j = 0; j < TETRI_SIZE; ++j) {
+      if (tetriPos.grid[i][j] == FILLED && tetriPos.y + j == 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void updateGameState(void) {
-  if (!paused) {
+  if (!paused && !gameOver) {
     if (tetriPos.x < (X_SIZE - 1) && IsKeyPressed(KEY_RIGHT)) {
       tetriPos.x += 1;
     } else if (tetriPos.x > 0 && IsKeyPressed(KEY_LEFT)) {
@@ -201,21 +223,27 @@ void updateGameState(void) {
       }
     }
 
+    if (shouldStop()) {
+      fillStatuses();
+      clearLines();
+
+      gameOver = isGameOver();
+      if (!gameOver) {
+        int val = GetRandomValue(0, TYPE_COUNT);
+        initTetri(val);
+      }
+    }
     gravityCounter += 1;
     if (gravityCounter > gravitySpeed) {
       gravityCounter = 0;
       tetriPos.y += 1;
     }
-
-    if (shouldStop()) {
-      fillStatuses();
-      int val = GetRandomValue(0, TYPE_COUNT);
-      initTetri(val);
-      clearLines();
-    }
   }
   if (IsKeyPressed(KEY_P)) {
     paused = !paused;
+  }
+  if (gameOver && IsKeyPressed(KEY_SPACE)) {
+    initGame();
   }
 }
 
@@ -270,10 +298,29 @@ void frame(void) {
   DrawFPS(SCREEN_WIDTH - 80, 10);
   char buffer[40];
   sprintf(buffer, "Score: %d", score);
-  DrawText(buffer, SCREEN_WIDTH - (strlen(buffer) * 12), 45, 20, WHITE);
+  DrawText(buffer, SCREEN_WIDTH - MeasureText(buffer, LARGE_FONT) - 10, 45,
+           LARGE_FONT, WHITE);
 
   if (paused) {
-    DrawText("PAUSED", SCREEN_WIDTH / 2 - 6 * 6, SCREEN_HEIGHT / 2, 20, WHITE);
+    char *paused = "PAUSED";
+    DrawText(paused, SCREEN_WIDTH / 2 - MeasureText(paused, LARGE_FONT),
+             SCREEN_HEIGHT / 2, LARGE_FONT, WHITE);
+  }
+
+  if (gameOver) {
+    char *gameOverText = "GAME OVER";
+    char *helpText = "Press space to start again";
+    int smallTextWidth = MeasureText(helpText, SMALL_FONT);
+
+    DrawRectangle(SCREEN_WIDTH / 2 - smallTextWidth / 2 - 32,
+                  SCREEN_HEIGHT / 2 - 32, smallTextWidth + 32,
+                  LARGE_FONT + SMALL_FONT + 72, BLACK);
+
+    DrawText(gameOverText,
+             SCREEN_WIDTH / 2 - MeasureText(gameOverText, LARGE_FONT) / 2,
+             SCREEN_HEIGHT / 2, LARGE_FONT, RED);
+    DrawText(helpText, SCREEN_WIDTH / 2 - smallTextWidth / 2,
+             SCREEN_HEIGHT / 2 + LARGE_FONT + 10, SMALL_FONT, WHITE);
   }
   EndDrawing();
   updateGameState();
@@ -285,8 +332,6 @@ int main(void) {
   SetTargetFPS(60);
 
   initGame();
-  int val = GetRandomValue(0, TYPE_COUNT);
-  initTetri(val);
 
   while (!WindowShouldClose()) {
     frame();
