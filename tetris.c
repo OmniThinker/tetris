@@ -193,6 +193,10 @@ void updateGameState(void) {
     gravityCounter += gravitySpeed / 5;
   } else if (IsKeyPressed(KEY_UP)) {
     rotate();
+  } else if (IsKeyPressed(KEY_SPACE)) {
+    while (!shouldStop()) {
+      tetriPos.y += 1;
+    }
   }
 
   gravityCounter += 1;
