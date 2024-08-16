@@ -41,6 +41,8 @@ static int gravitySpeed = 30;
 static int gravityCounter = 0;
 static int score = 0;
 
+static bool paused = false;
+
 void initTetri(TetriType type) {
   tetriPos.x = 0;
   tetriPos.y = 0;
@@ -184,32 +186,36 @@ void fillStatuses(void) {
 }
 
 void updateGameState(void) {
+  if (!paused) {
+    if (tetriPos.x < (X_SIZE - 1) && IsKeyPressed(KEY_RIGHT)) {
+      tetriPos.x += 1;
+    } else if (tetriPos.x > 0 && IsKeyPressed(KEY_LEFT)) {
+      tetriPos.x -= 1;
+    } else if (IsKeyDown(KEY_DOWN)) {
+      gravityCounter += gravitySpeed / 5;
+    } else if (IsKeyPressed(KEY_UP)) {
+      rotate();
+    } else if (IsKeyPressed(KEY_SPACE)) {
+      while (!shouldStop()) {
+        tetriPos.y += 1;
+      }
+    }
 
-  if (tetriPos.x < (X_SIZE - 1) && IsKeyPressed(KEY_RIGHT)) {
-    tetriPos.x += 1;
-  } else if (tetriPos.x > 0 && IsKeyPressed(KEY_LEFT)) {
-    tetriPos.x -= 1;
-  } else if (IsKeyDown(KEY_DOWN)) {
-    gravityCounter += gravitySpeed / 5;
-  } else if (IsKeyPressed(KEY_UP)) {
-    rotate();
-  } else if (IsKeyPressed(KEY_SPACE)) {
-    while (!shouldStop()) {
+    gravityCounter += 1;
+    if (gravityCounter > gravitySpeed) {
+      gravityCounter = 0;
       tetriPos.y += 1;
     }
-  }
 
-  gravityCounter += 1;
-  if (gravityCounter > gravitySpeed) {
-    gravityCounter = 0;
-    tetriPos.y += 1;
+    if (shouldStop()) {
+      fillStatuses();
+      int val = GetRandomValue(0, TYPE_COUNT);
+      initTetri(val);
+      clearLines();
+    }
   }
-
-  if (shouldStop()) {
-    fillStatuses();
-    int val = GetRandomValue(0, TYPE_COUNT);
-    initTetri(val);
-    clearLines();
+  if (IsKeyPressed(KEY_P)) {
+    paused = !paused;
   }
 }
 
@@ -265,6 +271,10 @@ void frame(void) {
   char buffer[40];
   sprintf(buffer, "Score: %d", score);
   DrawText(buffer, SCREEN_WIDTH - (strlen(buffer) * 12), 45, 20, WHITE);
+
+  if (paused) {
+    DrawText("PAUSED", SCREEN_WIDTH / 2 - 6 * 6, SCREEN_HEIGHT / 2, 20, WHITE);
+  }
   EndDrawing();
   updateGameState();
 }
