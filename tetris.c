@@ -390,6 +390,9 @@ void frame(void) {
   sprintf(buffer, "Score: %d", score);
   DrawText(buffer, SCREEN_WIDTH - MeasureText(buffer, LARGE_FONT) - 10, 45,
            LARGE_FONT, WHITE);
+  sprintf(buffer, "Level: %d", level);
+  DrawText(buffer, SCREEN_WIDTH - MeasureText(buffer, LARGE_FONT) - 10,
+           45 + LARGE_FONT + 10, LARGE_FONT, WHITE);
 
   if (paused) {
     char *paused = "PAUSED";
