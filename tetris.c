@@ -13,7 +13,7 @@
 
 #define SQUARE_WIDTH 36
 
-#define SCREEN_WIDTH X_SIZE *SQUARE_WIDTH
+#define SCREEN_WIDTH X_SIZE *SQUARE_WIDTH + 200
 #define SCREEN_HEIGHT Y_SIZE *SQUARE_WIDTH
 #define TETRI_SIZE 4
 #define TYPE_COUNT 6
@@ -21,6 +21,10 @@
 #define SMALL_FONT 12
 
 #define BACKGROUND_COLOR                                                       \
+  (Color) { 2, 6, 23, 255 }
+#define GRID_COLOR                                                             \
+  (Color) { 30, 58, 138, 255 }
+#define BACKGROUND_DARKER                                                      \
   (Color) { 23, 37, 84, 255 }
 #define MY_BLUE                                                                \
   (Color) { 37, 99, 235, 255 }
@@ -57,6 +61,7 @@ typedef struct Piece {
 } Piece;
 
 static Piece piece;
+static Piece nextPiece;
 static int gravitySpeed;
 static int gravityCounter;
 static int movementSpeed;
@@ -68,66 +73,69 @@ static int score;
 static bool paused;
 static bool gameOver;
 
-void initPiece(PieceType type) {
-  piece.x = (int)floor((double)X_SIZE / 2 - 2);
-  piece.y = 0;
-  piece.type = type;
+void initPiece(void) {
+  piece = nextPiece;
+  int val = GetRandomValue(0, TYPE_COUNT);
+
+  nextPiece.x = (int)floor((double)X_SIZE / 2 - 2);
+  nextPiece.y = 0;
+  nextPiece.type = val;
 
   for (int i = 0; i < TETRI_SIZE; ++i) {
     for (int j = 0; j < TETRI_SIZE; ++j) {
-      piece.grid[i][j] = EMPTY;
+      nextPiece.grid[i][j] = EMPTY;
     }
   }
-  switch (piece.type) {
+  switch (nextPiece.type) {
   case J:
-    piece.grid[0][0] = FILLED;
-    piece.grid[0][1] = FILLED;
-    piece.grid[1][1] = FILLED;
-    piece.grid[2][1] = FILLED;
-    piece.color = MY_BLUE;
+    nextPiece.grid[0][0] = FILLED;
+    nextPiece.grid[0][1] = FILLED;
+    nextPiece.grid[1][1] = FILLED;
+    nextPiece.grid[2][1] = FILLED;
+    nextPiece.color = MY_BLUE;
     break;
   case L:
-    piece.grid[0][1] = FILLED;
-    piece.grid[1][1] = FILLED;
-    piece.grid[2][1] = FILLED;
-    piece.grid[2][0] = FILLED;
-    piece.color = MY_ORANGE;
+    nextPiece.grid[0][1] = FILLED;
+    nextPiece.grid[1][1] = FILLED;
+    nextPiece.grid[2][1] = FILLED;
+    nextPiece.grid[2][0] = FILLED;
+    nextPiece.color = MY_ORANGE;
     break;
   case O:
-    piece.grid[1][0] = FILLED;
-    piece.grid[2][0] = FILLED;
-    piece.grid[1][1] = FILLED;
-    piece.grid[2][1] = FILLED;
-    piece.color = MY_YELLOW;
+    nextPiece.grid[1][0] = FILLED;
+    nextPiece.grid[2][0] = FILLED;
+    nextPiece.grid[1][1] = FILLED;
+    nextPiece.grid[2][1] = FILLED;
+    nextPiece.color = MY_YELLOW;
     break;
   case T:
-    piece.grid[1][0] = FILLED;
-    piece.grid[0][1] = FILLED;
-    piece.grid[2][1] = FILLED;
-    piece.grid[1][1] = FILLED;
-    piece.color = MY_PURPLE;
+    nextPiece.grid[1][0] = FILLED;
+    nextPiece.grid[0][1] = FILLED;
+    nextPiece.grid[2][1] = FILLED;
+    nextPiece.grid[1][1] = FILLED;
+    nextPiece.color = MY_PURPLE;
     break;
   case Z:
-    piece.grid[0][0] = FILLED;
-    piece.grid[1][0] = FILLED;
-    piece.grid[1][1] = FILLED;
-    piece.grid[2][1] = FILLED;
-    piece.color = MY_RED;
+    nextPiece.grid[0][0] = FILLED;
+    nextPiece.grid[1][0] = FILLED;
+    nextPiece.grid[1][1] = FILLED;
+    nextPiece.grid[2][1] = FILLED;
+    nextPiece.color = MY_RED;
     break;
   case S:
-    piece.grid[2][0] = FILLED;
-    piece.grid[1][0] = FILLED;
-    piece.grid[1][1] = FILLED;
-    piece.grid[0][1] = FILLED;
-    piece.color = MY_GREEN;
+    nextPiece.grid[2][0] = FILLED;
+    nextPiece.grid[1][0] = FILLED;
+    nextPiece.grid[1][1] = FILLED;
+    nextPiece.grid[0][1] = FILLED;
+    nextPiece.color = MY_GREEN;
     break;
   case I:
-    piece.grid[0][1] = FILLED;
-    piece.grid[1][1] = FILLED;
-    piece.grid[2][1] = FILLED;
-    piece.grid[3][1] = FILLED;
-    piece.color = MY_LIGHT_BLUE;
-    piece.y = -1;
+    nextPiece.grid[0][1] = FILLED;
+    nextPiece.grid[1][1] = FILLED;
+    nextPiece.grid[2][1] = FILLED;
+    nextPiece.grid[3][1] = FILLED;
+    nextPiece.color = MY_LIGHT_BLUE;
+    nextPiece.y = -1;
     break;
   }
 }
@@ -149,9 +157,8 @@ void initGame(void) {
       squares[i][j].color = BACKGROUND_COLOR;
     }
   }
-
-  int val = GetRandomValue(0, TYPE_COUNT);
-  initPiece(val);
+  initPiece(); // Twice to initalize next piece
+  initPiece();
 }
 
 void rotateCentered(void) {
@@ -362,8 +369,7 @@ void updateGameState(void) {
 
       gameOver = isGameOver();
       if (!gameOver) {
-        int val = GetRandomValue(0, TYPE_COUNT);
-        initPiece(val); // val);
+        initPiece(); // val);
       }
     }
     gravityCounter += 1;
@@ -403,11 +409,19 @@ void drawPiece(void) {
   for (int i = 0; i < TETRI_SIZE; ++i) {
     for (int j = 0; j < TETRI_SIZE; ++j) {
       if (piece.grid[i][j] == FILLED) {
-        switch (piece.type) {
-        default:
-          drawSquare(piece.x + i, piece.y + j, piece.color);
-          break;
-        }
+        drawSquare(piece.x + i, piece.y + j, piece.color);
+      }
+    }
+  }
+}
+
+void drawNextPiece(int x, int y) {
+  for (int i = 0; i < TETRI_SIZE; ++i) {
+    for (int j = 0; j < TETRI_SIZE; ++j) {
+      if (nextPiece.grid[i][j] == FILLED) {
+        DrawRectangle(x + (nextPiece.x + i) * SQUARE_WIDTH,
+                      y + (nextPiece.y + j) * SQUARE_WIDTH, SQUARE_WIDTH,
+                      SQUARE_WIDTH, nextPiece.color);
       }
     }
   }
@@ -424,9 +438,31 @@ void drawGame(void) {
   }
 }
 
+void drawGrid(void) {
+  for (int i = 0; i < X_SIZE; ++i) {
+    DrawLine((i + 1) * SQUARE_WIDTH, 0, (i + 1) * SQUARE_WIDTH, SCREEN_HEIGHT,
+             GRID_COLOR);
+  }
+  for (int j = 0; j < Y_SIZE; ++j) {
+    DrawLine(0, (j + 1) * SQUARE_WIDTH, X_SIZE * SQUARE_WIDTH,
+             (j + 1) * SQUARE_WIDTH, GRID_COLOR);
+  }
+}
+
 void frame(void) {
   BeginDrawing();
   ClearBackground(BACKGROUND_COLOR);
+  DrawRectangle(SCREEN_WIDTH - 200, 0, 200, SCREEN_HEIGHT, BACKGROUND_DARKER);
+  int squareX = SCREEN_WIDTH - 200 + (200 - SQUARE_WIDTH * TETRI_SIZE) / 2;
+  DrawRectangle(squareX, 120, SQUARE_WIDTH * TETRI_SIZE,
+                SQUARE_WIDTH * TETRI_SIZE, BACKGROUND_COLOR);
+
+  drawNextPiece(squareX - 3 * SQUARE_WIDTH + 10, 120 + SQUARE_WIDTH);
+
+  DrawText("Next piece (TAB)", squareX, 120 + SQUARE_WIDTH * TETRI_SIZE + 20,
+           16, WHITE);
+  DrawLine(SCREEN_WIDTH - 200, 0, SCREEN_WIDTH - 200, SCREEN_HEIGHT, BLACK);
+  drawGrid();
   drawGame();
   DrawFPS(SCREEN_WIDTH - 80, 10);
   char buffer[40];
@@ -439,8 +475,8 @@ void frame(void) {
 
   if (paused) {
     char *paused = "PAUSED";
-    DrawText(paused, SCREEN_WIDTH / 2 - MeasureText(paused, LARGE_FONT),
-             SCREEN_HEIGHT / 2, LARGE_FONT, WHITE);
+    DrawText(paused, SCREEN_WIDTH - MeasureText(paused, LARGE_FONT) - 50,
+             SCREEN_HEIGHT - 50, LARGE_FONT, WHITE);
   }
 
   if (gameOver) {
