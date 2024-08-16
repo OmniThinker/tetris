@@ -42,6 +42,10 @@ typedef struct Piece {
 static Piece piece;
 static int gravitySpeed;
 static int gravityCounter;
+static int movementSpeed;
+static int movementCounter;
+static int linesCleared;
+static int level;
 static int score;
 
 static bool paused;
@@ -106,14 +110,20 @@ void initPiece(PieceType type) {
     piece.grid[2][1] = FILLED;
     piece.grid[3][1] = FILLED;
     piece.color = SKYBLUE;
+    piece.y = -1;
     break;
   }
 }
 
 void initGame(void) {
-  gravitySpeed = 30;
+  gravitySpeed = 48;
   gravityCounter = 0;
+  movementSpeed = 6;
+  movementCounter = 0;
+
   score = 0;
+  linesCleared = 0;
+  level = 1;
   paused = false;
   gameOver = false;
   for (int i = 0; i < X_SIZE; ++i) {
@@ -192,6 +202,7 @@ bool shouldStop(void) {
 }
 
 void clearLines(void) {
+  int numLinesCleared = 0;
   for (int j = 0; j < Y_SIZE; ++j) {
     bool clear = true;
     for (int i = 0; i < X_SIZE; ++i) {
@@ -200,13 +211,34 @@ void clearLines(void) {
       }
     }
     if (clear) {
-      score += 1;
+      numLinesCleared += 1;
+      linesCleared += 1;
       for (int k = j - 1; k > 0; --k) {
         for (int i = 0; i < X_SIZE; ++i) {
           squares[i][k + 1].status = squares[i][k].status;
         }
       }
     }
+  }
+  if (linesCleared > 10) {
+    linesCleared = linesCleared - 10;
+    gravitySpeed -= 5;
+  }
+  switch (numLinesCleared) {
+  case 1:
+    score += 40 * level;
+    break;
+  case 2:
+    score += 100 * level;
+    break;
+  case 3:
+    score += 300 * level;
+    break;
+  case 4:
+    score += 1200 * level;
+    break;
+  default:
+    break;
   }
 }
 
@@ -256,18 +288,29 @@ bool canGoLeft(void) {
 
 void updateGameState(void) {
   if (!paused && !gameOver) {
-    if (IsKeyPressed(KEY_RIGHT) && canGoRight()) {
+    if ((IsKeyPressed(KEY_RIGHT) ||
+         (IsKeyDown(KEY_RIGHT) && movementCounter > movementSpeed)) &&
+        canGoRight()) {
       piece.x += 1;
-    } else if (IsKeyPressed(KEY_LEFT) && canGoLeft()) {
+      movementCounter = 0;
+    } else if ((IsKeyPressed(KEY_LEFT) ||
+                (IsKeyDown(KEY_LEFT) && movementCounter > movementSpeed)) &&
+               canGoLeft()) {
       piece.x -= 1;
+      movementCounter = 0;
     } else if (IsKeyDown(KEY_DOWN)) {
-      gravityCounter += gravitySpeed / 5;
+      gravityCounter += gravitySpeed / 2;
     } else if (IsKeyPressed(KEY_UP)) {
       rotate();
     } else if (IsKeyPressed(KEY_SPACE)) {
       while (!shouldStop()) {
         piece.y += 1;
       }
+    }
+    if (movementCounter > movementSpeed) {
+      movementCounter = 0;
+    } else {
+      ++movementCounter;
     }
 
     if (shouldStop()) {
