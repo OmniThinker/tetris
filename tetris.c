@@ -1,3 +1,4 @@
+#include <math.h>
 #include <raylib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -47,7 +48,7 @@ static bool paused;
 static bool gameOver;
 
 void initTetri(TetriType type) {
-  tetriPos.x = 0;
+  tetriPos.x = (int)floor((double)X_SIZE / 2 - 1);
   tetriPos.y = 0;
   tetriPos.type = type;
 
@@ -207,11 +208,33 @@ bool isGameOver(void) {
   return false;
 }
 
+bool canGoRight(void) {
+  for (int i = 0; i < TETRI_SIZE; ++i) {
+    for (int j = 0; j < TETRI_SIZE; ++j) {
+      if (tetriPos.grid[i][j] == FILLED && tetriPos.x + i == X_SIZE - 1) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool canGoLeft(void) {
+  for (int i = 0; i < TETRI_SIZE; ++i) {
+    for (int j = 0; j < TETRI_SIZE; ++j) {
+      if (tetriPos.grid[i][j] == FILLED && tetriPos.x + i == 0) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 void updateGameState(void) {
   if (!paused && !gameOver) {
-    if (tetriPos.x < (X_SIZE - 1) && IsKeyPressed(KEY_RIGHT)) {
+    if (IsKeyPressed(KEY_RIGHT) && canGoRight()) {
       tetriPos.x += 1;
-    } else if (tetriPos.x > 0 && IsKeyPressed(KEY_LEFT)) {
+    } else if (IsKeyPressed(KEY_LEFT) && canGoLeft()) {
       tetriPos.x -= 1;
     } else if (IsKeyDown(KEY_DOWN)) {
       gravityCounter += gravitySpeed / 5;
