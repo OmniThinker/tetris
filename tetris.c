@@ -338,20 +338,25 @@ bool canRotate(void) {
 
 void updateGameState(void) {
   if (!paused && !gameOver) {
+    bool moved = false;
     if ((IsKeyPressed(KEY_RIGHT) ||
          (IsKeyDown(KEY_RIGHT) && movementCounter > movementSpeed)) &&
         canGoRight()) {
       piece.x += 1;
       movementCounter = 0;
+      moved = true;
     } else if ((IsKeyPressed(KEY_LEFT) ||
                 (IsKeyDown(KEY_LEFT) && movementCounter > movementSpeed)) &&
                canGoLeft()) {
       piece.x -= 1;
       movementCounter = 0;
+      moved = true;
     } else if (IsKeyDown(KEY_DOWN)) {
       gravityCounter += gravitySpeed / 2;
+      moved = true;
     } else if (IsKeyPressed(KEY_UP) && canRotate()) {
       rotate();
+      moved = true;
     } else if (IsKeyPressed(KEY_SPACE)) {
       while (!shouldStop()) {
         piece.y += 1;
@@ -372,7 +377,10 @@ void updateGameState(void) {
         initPiece(); // val);
       }
     }
-    gravityCounter += 1;
+    if (!moved) {
+      gravityCounter += 1;
+    }
+
     if (gravityCounter > gravitySpeed) {
       gravityCounter = 0;
       piece.y += 1;
@@ -462,8 +470,8 @@ void frame(void) {
   DrawText("Next piece (TAB)", squareX, 120 + SQUARE_WIDTH * TETRI_SIZE + 20,
            16, WHITE);
   DrawLine(SCREEN_WIDTH - 200, 0, SCREEN_WIDTH - 200, SCREEN_HEIGHT, BLACK);
-  drawGrid();
   drawGame();
+  drawGrid();
   DrawFPS(SCREEN_WIDTH - 80, 10);
   char buffer[40];
   sprintf(buffer, "Score: %d", score);
