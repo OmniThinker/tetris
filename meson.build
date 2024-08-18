@@ -2,8 +2,10 @@ project('tetris', 'c',
   version : '0.1',
   default_options : ['warning_level=3'])
 
-raylib = dependency('raylib')
+raylib = dependency('raylib', version: '>=4.5.0')
 
-exe = executable('tetris', 'tetris.c', dependencies: raylib)
+src = ['src/main.c', 'src/tetris.c']
+
+exe = executable('tetris', sources: src, dependencies: raylib)
 
 test('basic', exe)
