@@ -156,7 +156,9 @@ void resolveLevel(TetrisGame *gamePtr) {
   if (gamePtr->linesCleared > 10) {
     gamePtr->linesCleared = gamePtr->linesCleared - 10;
     gamePtr->level += 1;
-    gamePtr->gravitySpeed -= 5;
+    if (gamePtr->gravitySpeed > 6) {
+      gamePtr->gravitySpeed -= 5;
+    }
   }
 }
 
@@ -288,16 +290,17 @@ void updateGameState(TetrisGame *gamePtr) {
     if (IsKeyDown(KEY_DOWN)) {
       gamePtr->gravityCounter += gamePtr->gravitySpeed / 2;
       moved = true;
-    }
-    if (IsKeyPressed(KEY_UP) && canRotate(&gamePtr->piece, gamePtr->squares)) {
-      rotate(&gamePtr->piece);
-      moved = true;
-    }
-    if (IsKeyPressed(KEY_SPACE)) {
+    } else if (IsKeyPressed(KEY_SPACE)) {
       while (!shouldStop(&gamePtr->piece, gamePtr->squares)) {
         gamePtr->piece.y += 1;
       }
     }
+
+    if (IsKeyPressed(KEY_UP) && canRotate(&gamePtr->piece, gamePtr->squares)) {
+      rotate(&gamePtr->piece);
+      moved = true;
+    }
+
     if (gamePtr->movementCounter > gamePtr->movementSpeed) {
       gamePtr->movementCounter = 0;
     } else {
