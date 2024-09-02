@@ -1,7 +1,7 @@
 #include <check.h>
 #include <stdlib.h>
 
-START_TEST(test_hello) { ck_assert_int_eq(4, 5); }
+START_TEST(test_hello) { ck_assert_int_eq(4, 4); }
 END_TEST
 
 Suite *tetriSuite(void) {

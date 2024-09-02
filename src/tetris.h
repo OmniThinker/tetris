@@ -40,8 +40,7 @@ typedef struct Square {
 typedef enum PieceType { I, T, O, S, Z, L, J } PieceType;
 
 typedef struct Piece {
-  int x;
-  int y;
+  Vector3 position;
   PieceType type;
   SquareStatus grid[TETRI_SIZE][TETRI_SIZE];
   Color color;
